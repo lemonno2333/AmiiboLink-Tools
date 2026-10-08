@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#e7eceb" />
+    <meta name="description" content="Amiibo Link 本地传输台：检查 Amiibo BIN、管理设备模式并通过 Web Bluetooth 写入。" />
+    <meta name="application-name" content="Amiibo Link 本地传输台" />
+    <title>Amiibo Link · 本地传输台</title>
+    <link rel="stylesheet" href="./styles.css?v=1.0.0" />
+    <script src="./app.js?v=1.0.0" defer></script>
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="wordmark" href="#top" aria-label="Amiibo Link 首页">
+        <span class="wordmark-symbol" aria-hidden="true"><i></i><i></i><i></i></span>
+        <span>AMIIBO <b>LINK</b></span>
+      </a>
+      <div class="topbar-meta"><span class="live-dot"></span> 本地传输台 <span class="topbar-divider">/</span> V1.0.0</div>
+    </header>
+
+    <main id="top">
+      <section class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow"><span class="eyebrow-line"></span> NFC DEVICE WORKBENCH</p>
+          <h1>把一个标签，<br /><em>送到设备里。</em></h1>
+          <p class="hero-intro">查找公开目录中的 Amiibo 识别信息，导入你有权使用的 BIN 文件，再通过蓝牙传到 Amiibo Link。</p>
+          <div class="hero-facts">
+            <span><b>13.56</b> MHz</span>
+            <span><b>540</b> byte BIN</span>
+            <span><b>BLE</b> / NUS</span>
+          </div>
+        </div>
+        <div class="coil-figure" aria-hidden="true">
+          <div class="coil-ring ring-one"></div>
+          <div class="coil-ring ring-two"></div>
+          <div class="coil-ring ring-three"></div>
+          <div class="coil-core"><span>TAG</span><b>215</b></div>
+          <div class="coil-label">NFC FIELD<br /><span>13.56 MHz</span></div>
+          <div class="coil-pin pin-a"></div><div class="coil-pin pin-b"></div>
+        </div>
+      </section>
+
+      <div class="section-rule"><span>DEVICE / DATA / TRANSFER</span><span>本地文件不会上传到服务器</span></div>
+
+      <section class="workspace" aria-label="设备和数据">
+        <aside class="device-panel panel">
+          <div class="panel-heading">
+            <div>
+              <p class="kicker">连接目标</p>
+              <h2>蓝牙设备</h2>
+            </div>
+            <span class="panel-index">NUS·01</span>
+          </div>
+
+          <div class="browser-compatibility is-checking" id="browser-compatibility" role="status" aria-live="polite">
+            <span class="compatibility-light" id="compatibility-light" aria-hidden="true"></span>
+            <div class="compatibility-copy">
+              <strong id="compatibility-title">正在检测浏览器支持</strong>
+              <span id="compatibility-detail">检查 Web Bluetooth API 和安全上下文…</span>
+            </div>
+            <a href="https://caniuse.com/web-bluetooth" target="_blank" rel="noopener noreferrer">兼容性 ↗</a>
+          </div>
+
+          <div id="device-status" class="device-state" aria-live="polite">
+            <span class="state-light" id="device-light"></span>
+            <div><strong id="device-name">尚未连接</strong><span id="device-detail">请先让设备进入蓝牙传输模式</span></div>
+          </div>
+
+          <button class="button button-dark connect-button" id="connect-button" type="button">
+            <span class="button-icon" aria-hidden="true">↗</span><span id="connect-label">连接设备</span>
+          </button>
+          <p class="field-note">设备选择器会筛选名称以 Amiibo Link 开头的设备。</p>
+
+          <label class="field-label" for="protocol-select">设备协议</label>
+          <select id="protocol-select" class="select-control">
+            <option value="auto">自动识别</option>
+            <option value="kou">旧版 · 直传</option>
+            <option value="kou2">新版 · 加密传输</option>
+          </select>
+
+          <div class="device-identity">
+            <div><span>硬件序列号</span><code id="hardware-serial">连接后读取</code></div>
+            <button class="button button-outline copy-id-button" id="copy-hardware-serial" type="button" disabled>复制</button>
+          </div>
+        </aside>
+
+        <section class="mode-panel panel" aria-labelledby="mode-heading">
+            <div class="mode-heading">
+              <div><p class="kicker">DEVICE CONTROL</p><h3 id="mode-heading">模式设置</h3></div>
+              <span class="panel-index">BLE</span>
+            </div>
+            <p class="mode-intro">请点击选择要使用的模式</p>
+            <label class="field-label" for="mode-select">选择模式</label>
+            <div class="mode-select-controls">
+              <select id="mode-select" class="select-control" disabled>
+                <option value="">请选择模式</option>
+                <option value="infinite">无限模式（手动）</option>
+                <option value="sequence">按序模式</option>
+                <option value="read-write" data-old-protocol="true">读写模式</option>
+                <option value="infinite-auto" data-new-protocol="true">无限模式（自动）</option>
+              </select>
+              <button class="button button-dark mode-apply" id="apply-mode-button" type="button" disabled>应用模式</button>
+            </div>
+            <aside class="mode-warning" id="mode-explanation" aria-live="polite">
+              <strong id="mode-explanation-title">模式说明</strong>
+              <p id="mode-explanation-copy">选择模式后显示对应说明。</p>
+            </aside>
+            <div class="factory-mode">
+              <button class="mode-action is-danger" type="button" data-mode="factory" id="factory-mode-button" disabled>
+                <span class="mode-copy"><strong>恢复出厂设置</strong></span><span class="mode-arrow" aria-hidden="true">↻</span>
+              </button>
+            </div>
+            <p class="mode-status" id="mode-status" aria-live="polite">请先连接设备。</p>
+        </section>
+
+        <section class="data-panel panel" aria-labelledby="data-heading">
+          <div class="panel-heading">
+            <div>
+              <p class="kicker">文件 / 识别信息</p>
+              <h2 id="data-heading">选择 Amiibo 数据</h2>
+            </div>
+            <span class="panel-index">BIN·540</span>
+          </div>
+
+          <div class="source-tabs" role="tablist" aria-label="数据来源">
+            <button class="source-tab is-active" type="button" role="tab" aria-selected="true" data-tab="file">导入 BIN</button>
+            <button class="source-tab" type="button" role="tab" aria-selected="false" data-tab="catalog">公开目录</button>
+          </div>
+
+          <div class="tab-content" id="file-tab">
+            <input id="file-input" class="visually-hidden" type="file" accept=".bin" />
+            <button class="dropzone" id="dropzone" type="button" aria-describedby="file-help">
+              <span class="dropzone-icon" aria-hidden="true">＋</span>
+              <span class="dropzone-title">选择本机 BIN 文件</span>
+              <span class="dropzone-subtitle">也可以把文件拖到这里</span>
+              <span class="dropzone-format">NTAG215 · 540 bytes</span>
+            </button>
+            <p id="file-help" class="field-note" aria-live="polite">仅接受 .bin 文件，长度必须为 540 字节，且 NTAG215 UID 首字节须为 04。文件只在当前浏览器内存中处理，不会上传。</p>
+
+            <div class="url-import">
+              <label for="bin-url" class="field-label">或读取你有权使用的 BIN 直链</label>
+              <div class="url-row">
+                <input id="bin-url" class="text-control" type="url" inputmode="url" placeholder="https://example.com/amiibo.bin" />
+                <button id="load-url" class="button button-outline" type="button">读取</button>
+              </div>
+              <p class="field-note">跨站读取受来源网站 CORS 设置限制；失败时先下载文件，再从本机导入。</p>
+            </div>
+
+            <div class="file-card" id="file-card" hidden>
+              <span class="file-badge">BIN</span>
+              <div class="file-info"><strong id="file-name">尚未选择文件</strong><span id="file-size"></span></div>
+              <span class="file-validity" id="file-validity"></span>
+              <button id="clear-file" class="icon-button" type="button" aria-label="移除文件">×</button>
+            </div>
+          </div>
+
+          <div class="tab-content catalog-content" id="catalog-tab" hidden>
+            <div class="catalog-source">
+              <span class="source-mark">A</span>
+              <div><strong>AmiiboAPI · 公开 ID 列表</strong><span>直接读取公开 JSON：名称和识别 ID</span></div>
+              <a href="https://raw.githubusercontent.com/N3evin/AmiiboAPI/master/database/amiibo.json" target="_blank" rel="noopener noreferrer">JSON ↗</a>
+            </div>
+            <label class="visually-hidden" for="catalog-search">搜索 Amiibo 名称</label>
+            <input id="catalog-search" class="text-control search-control" type="search" placeholder="搜索角色或 Amiibo 名称…" />
+            <div class="catalog-status" id="catalog-status" aria-live="polite">正在读取公开目录…</div>
+            <div class="catalog-list" id="catalog-list"></div>
+            <div class="catalog-detail" id="catalog-detail" hidden></div>
+            <p class="field-note catalog-disclaimer">此 JSON 提供名称与识别 ID，不含可写入设备的 Amiibo BIN。选择目录条目不会自动生成或下载 BIN。</p>
+          </div>
+
+          <div class="transfer-row">
+            <div class="transfer-state"><span class="transfer-light" id="transfer-light"></span><span id="transfer-status" aria-live="polite">等待 BIN 文件</span></div>
+            <button class="button button-accent" id="transfer-button" type="button" disabled>传到设备 <span aria-hidden="true">→</span></button>
+          </div>
+          <div class="progress-track" aria-label="传输进度"><div class="progress-fill" id="progress-fill"></div></div>
+        </section>
+
+      <section class="log-panel" aria-labelledby="log-heading">
+        <div class="log-heading"><h2 id="log-heading">传输记录</h2><button class="text-button" id="clear-log" type="button">清除</button></div>
+        <div class="log-list" id="log-list" aria-live="polite"><p class="empty-log">连接状态、目录读取和传输结果会显示在这里。</p></div>
+      </section>
+      </section>
+
+      <section class="resources" aria-labelledby="resources-heading">
+        <div class="resources-heading">
+          <div><p class="kicker">SOURCE MAP / 外部来源</p><h2 id="resources-heading">目录与文件入口</h2></div>
+          <p>识别 ID 列表和可写 BIN 文件是不同内容。外站页面、网盘权限与文件兼容性以来源方为准。</p>
+        </div>
+        <div class="resource-grid">
+          <a class="resource-card resource-featured" href="https://raw.githubusercontent.com/N3evin/AmiiboAPI/master/database/amiibo.json" target="_blank" rel="noopener noreferrer">
+            <span class="resource-type">JSON / 目录</span><span class="resource-arrow" aria-hidden="true">↗</span>
+            <strong>Amiibo ID 列表</strong><span>生成器引用的公开 JSON，可直接读取名称和 ID；不包含 BIN 文件。</span>
+          </a>
+          <a class="resource-card" href="https://hax0kartik.github.io/amiibo-generator/" target="_blank" rel="noopener noreferrer">
+            <span class="resource-type">生成器</span><span class="resource-arrow" aria-hidden="true">↗</span>
+            <strong>Amiibo Generator</strong><span>按名称搜索并生成 Wumiibo 兼容文件；与原始加密标签 dump、设备兼容性不是一回事。</span>
+          </a>
+          <a class="resource-card" href="https://github.com/AmiiboDB/Amiibo" target="_blank" rel="noopener noreferrer">
+            <span class="resource-type">GitHub / 社区文件</span><span class="resource-arrow" aria-hidden="true">↗</span>
+            <strong>AmiiboDB</strong><span>仓库说明包含 BIN 与 NFC 文件目录；请在原仓库查看具体文件和说明。</span>
+          </a>
+          <a class="resource-card" href="https://drive.proton.me/urls/6NKX54Z8V4#gqmUWyieMwG5" target="_blank" rel="noopener noreferrer">
+            <span class="resource-type">Proton Drive / 网盘</span><span class="resource-arrow" aria-hidden="true">↗</span>
+            <strong>Proton Drive 分享</strong><span>打开分享页面查看内容；此 demo 无法核验目录内容或访问权限。</span>
+          </a>
+          <a class="resource-card" href="https://www.reddit.com/r/newamiibobins/" target="_blank" rel="noopener noreferrer">
+            <span class="resource-type">Reddit / 社区更新</span><span class="resource-arrow" aria-hidden="true">↗</span>
+            <strong>r/newamiibobins</strong><span>社区帖子和用户分享入口；不是稳定的机器可读文件目录。</span>
+          </a>
+          <a class="resource-card" href="https://drive.google.com/drive/folders/1fNo0qv-6GnMwNWXwZ6WLZI5LQzH-jX9f" target="_blank" rel="noopener noreferrer">
+            <span class="resource-type">Google Drive / 网盘</span><span class="resource-arrow" aria-hidden="true">↗</span>
+            <strong>Google Drive 文件夹</strong><span>打开分享文件夹查看内容；若需登录或授权，请按 Google Drive 页面提示操作。</span>
+          </a>
+        </div>
+        <p class="resources-note">外部链接会在新标签页打开。下载后请确认文件来源、格式与设备要求；本地导入的文件只在当前浏览器处理。</p>
+      </section>
+
+      <footer class="page-footer">
+        <span>AMIIBO LINK / V1.0.0</span>
+        <span>公开元数据 ≠ BIN 数据文件</span>
+      </footer>
+    </main>
+
+    <dialog class="browser-warning-dialog" id="browser-warning-dialog" aria-labelledby="browser-warning-title" aria-describedby="browser-warning-detail">
+      <div class="browser-warning-content">
+        <p class="kicker">WEB BLUETOOTH CHECK</p>
+        <h2 id="browser-warning-title">当前环境无法使用蓝牙连接</h2>
+        <p id="browser-warning-detail"></p>
+        <p class="browser-warning-guide">建议使用最新版桌面版 Chrome / Edge，或 Android Chrome。Safari 与 Firefox 目前没有原生 Web Bluetooth 支持。</p>
+        <a href="https://caniuse.com/web-bluetooth" target="_blank" rel="noopener noreferrer">查看浏览器兼容性 ↗</a>
+        <div class="browser-warning-actions">
+          <button class="button button-dark" id="close-browser-warning" type="button" autofocus>知道了</button>
+        </div>
+      </div>
+    </dialog>
+  </body>
+</html>
